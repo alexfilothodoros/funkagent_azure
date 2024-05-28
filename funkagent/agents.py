@@ -1,8 +1,9 @@
+import os
 import json
 from typing import Optional
-from funkagent import parser
-
+import parser
 import openai
+from openai import AzureOpenAI
 
 sys_msg = """Assistant is a large language model trained by OpenAI.
 
@@ -14,15 +15,21 @@ Overall, Assistant is a powerful system that can help with a wide range of tasks
 """
 
 
+client = AzureOpenAI(
+    api_version=os.getenv("OPENAI_API_VERSION"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"))
+
+
+
 class Agent:
     def __init__(
         self,
         openai_api_key: str,
-        model_name: str = 'gpt-4-0613',
         functions: Optional[list] = None
     ):
-        openai.api_key = openai_api_key
-        self.model_name = model_name
+        openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        openai.api_type = 'azure'
+        self.model_name = os.getenv("CHAT_COMPLETIONS_DEPLOYMENT_NAME")
         self.functions = self._parse_functions(functions)
         self.func_mapping = self._create_func_mapping(functions)
         self.chat_history = [{'role': 'system', 'content': sys_msg}]
@@ -41,15 +48,15 @@ class Agent:
         self, messages: list, use_functions: bool=True
     ) -> openai.ChatCompletion:
         if use_functions and self.functions:
-            res = openai.ChatCompletion.create(
-                model=self.model_name,
-                messages=messages,
-                functions=self.functions
+            res = client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            functions=self.functions
             )
         else:
-            res = openai.ChatCompletion.create(
-                model=self.model_name,
-                messages=messages
+            res = client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
             )
         return res
 
@@ -112,3 +119,4 @@ class Agent:
         res = self._generate_response()
         self.chat_history.append(res.choices[0].message.to_dict())
         return res
+    
