@@ -4,14 +4,11 @@ import re
 
 
 def type_mapping(dtype):
-    if dtype == float:
-        return "number"
-    elif dtype == int:
-        return "integer"
-    elif dtype == str:
-        return "string"
-    else:
-        return "string"
+    return {
+        float: "number",
+        int: "integer",
+        str: "string"
+    }.get(dtype, "string")
 
 
 def extract_params(doc_str: str):
